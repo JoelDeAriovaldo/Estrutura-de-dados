@@ -1,6 +1,8 @@
 #include <iostream>
 #include <fstream>
-#include <string>
+#include <vector>
+#include <sstream>
+#include <algorithm>
 
 using namespace std;
 
@@ -11,210 +13,259 @@ struct Bem
     string categoria;
     string dataAquisicao;
     float peso;
-    string endereco; // Apenas para imóveis
-
-    // Construtor
-    Bem(string nome, string categoria, string dataAquisicao, float peso, string endereco)
-    {
-        this->nome = nome;
-        this->categoria = categoria;
-        this->dataAquisicao = dataAquisicao;
-        this->peso = peso;
-        this->endereco = endereco;
-    }
-
-public:
-    Bem() {}
-
-public:
-    friend istream &operator>>(istream &in, Bem &bem)
-    {
-        // Leia os dados do bem da stream "in"
-        // ...
-        return in;
-    }
+    string endereco; // Obrigatório para bens imóveis
 };
 
-// Função para exibir os detalhes de um bem
-void exibirBem(Bem bem)
+// Tipo de dado para armazenar um vetor de bens
+typedef vector<Bem> VetorBens;
+
+// Função para dividir uma string com base em um delimitador
+vector<string> split(const string &s, char delimiter)
 {
-    cout << "Nome: " << bem.nome << endl;
-    cout << "Categoria: " << bem.categoria << endl;
-    cout << "Data de Aquisição: " << bem.dataAquisicao << endl;
-    cout << "Peso: " << bem.peso << " kg" << endl;
-    if (!bem.endereco.empty())
+    vector<string> tokens;
+    string token;
+    istringstream tokenStream(s);
+    while (getline(tokenStream, token, delimiter))
     {
-        cout << "Endereço: " << bem.endereco << endl;
+        tokens.push_back(token);
     }
-    cout << endl;
-}
-
-// Função para ler os dados de um bem do teclado
-Bem lerBem()
-{
-    string nome, categoria, dataAquisicao, endereco;
-    float peso;
-
-    cout << "Digite o nome do bem: ";
-    cin >> nome;
-
-    cout << "Digite a categoria do bem: ";
-    cin >> categoria;
-
-    cout << "Digite a data de aquisição do bem (dd/mm/aaaa): ";
-    cin >> dataAquisicao;
-
-    cout << "Digite o peso do bem (kg): ";
-    cin >> peso;
-
-    cout << "Digite o endereço do bem (se for imóvel): ";
-    cin >> endereco;
-
-    return Bem(nome, categoria, dataAquisicao, peso, endereco);
-}
-
-// Função para gravar um bem em um arquivo
-void gravarBem(Bem bem, ofstream &arquivo)
-{
-    arquivo << bem.nome << endl;
-    arquivo << bem.categoria << endl;
-    arquivo << bem.dataAquisicao << endl;
-    arquivo << bem.peso << endl;
-    arquivo << bem.endereco << endl;
-}
-
-// Função para ler um bem de um arquivo
-Bem lerBem(ifstream &arquivo)
-{
-    string nome, categoria, dataAquisicao, endereco;
-    float peso;
-
-    getline(arquivo, nome);
-    getline(arquivo, categoria);
-    getline(arquivo, dataAquisicao);
-    arquivo >> peso;
-    arquivo.ignore();
-    getline(arquivo, endereco);
-
-    return Bem(nome, categoria, dataAquisicao, peso, endereco);
-}
-
-// Função para exibir todos os bens cadastrados
-void exibirTodosBens(const char *nomeArquivo)
-{
-    ifstream arquivo(nomeArquivo);
-
-    if (!arquivo.is_open())
-    {
-        cout << "Erro ao abrir o arquivo!" << endl;
-        return;
-    }
-
-    Bem bem;
-    while (arquivo >> bem)
-    {
-        exibirBem(bem);
-    }
-
-    arquivo.close();
-}
-
-// Função para buscar um bem por nome
-void buscarBemPorNome(const char *nomeArquivo)
-{
-    string nomePesquisa;
-    ifstream arquivo(nomeArquivo);
-
-    if (!arquivo.is_open())
-    {
-        cout << "Erro ao abrir o arquivo!" << endl;
-        return;
-    }
-
-    cout << "Digite o nome do bem que deseja buscar: ";
-    cin >> nomePesquisa;
-
-    Bem bem;
-    bool encontrado = false;
-    while (arquivo >> bem)
-    {
-        if (bem.nome == nomePesquisa)
-        {
-            exibirBem(bem);
-            encontrado = true;
-            break;
-        }
-    }
-
-    if (!encontrado)
-    {
-        cout << "Bem não encontrado!" << endl;
-    }
-
-    arquivo.close();
+    return tokens;
 }
 
 // Função para adicionar um novo bem
-void adicionarBem(const char *nomeArquivo)
+void adicionarBem(VetorBens &bens)
 {
-    ofstream arquivo(nomeArquivo, ios::app);
+    Bem novoBem;
 
-    if (!arquivo.is_open())
+    // Leitura dos dados do bem
+    cout << "Nome do bem: ";
+    cin.ignore(); // Ignora o caractere de nova linha pendente
+    getline(cin, novoBem.nome);
+
+    cout << "Categoria (movel/imovel): ";
+    cin >> novoBem.categoria;
+
+    cout << "Data de aquisição (dd/mm/aaaa): ";
+    cin >> novoBem.dataAquisicao;
+
+    cout << "Peso (kg): ";
+    cin >> novoBem.peso;
+
+    // Verificação da categoria e leitura do endereço (se necessário)
+    if (novoBem.categoria == "imovel")
     {
-        cout << "Erro ao abrir o arquivo!" << endl;
-        return;
+        cout << "Endereço (obrigatório para imóveis): ";
+        cin.ignore(); // Ignora o caractere de nova linha pendente
+        getline(cin, novoBem.endereco);
+    }
+    else
+    {
+        novoBem.endereco = ""; // Define o endereço como vazio para bens móveis
     }
 
-    Bem novoBem = lerBem();
-    gravarBem(novoBem, arquivo);
+    // Adição do novo bem ao vetor
+    bens.push_back(novoBem);
+}
 
-    if (!arquivo.is_open())
+// Função para listar todos os bens
+void listarBens(const VetorBens &bens)
+{
+    for (const Bem &bem : bens)
     {
-        cout << "Erro ao abrir o arquivo!" << endl;
-        return;
+        cout << "Nome: " << bem.nome << endl;
+        cout << "Categoria: " << bem.categoria << endl;
+        cout << "Data de aquisição: " << bem.dataAquisicao << endl;
+        cout << "Peso: " << bem.peso << " kg" << endl;
+
+        if (bem.categoria == "imovel")
+        {
+            cout << "Endereço: " << bem.endereco << endl;
+        }
+
+        cout << endl;
+    }
+}
+
+// Função para buscar um bem por nome
+Bem *buscarBemPorNome(VetorBens &bens, string nome)
+{
+    for (Bem &bem : bens)
+    {
+        if (bem.nome == nome)
+        {
+            return &bem;
+        }
     }
 
-    novoBem = lerBem();
-    gravarBem(novoBem, arquivo); // Gravando o novo bem no arquivo
-    cout << "Bem adicionado com sucesso!" << endl;
+    return nullptr;
+}
 
-    arquivo.close();
+// Função para remover um bem por nome
+void removerBemPorNome(VetorBens &bens, string nome)
+{
+    // Busca o bem pelo nome
+    auto it = std::remove_if(bens.begin(), bens.end(), [nome](const Bem &bem)
+                             { return bem.nome == nome; });
+
+    // Se o bem for encontrado, remove-o do vetor
+    if (it != bens.end())
+    {
+        bens.erase(it, bens.end());
+    }
+    else
+    {
+        cout << "Bem não encontrado!" << endl;
+    }
+}
+
+// Função para ler os dados dos bens de um arquivo
+void lerDadosDoArquivo(VetorBens &bens)
+{
+    ifstream arquivo("bens.txt");
+
+    if (arquivo.is_open())
+    {
+        string linha;
+
+        // Leitura de cada linha do arquivo
+        while (getline(arquivo, linha))
+        {
+            // Separação dos campos da linha
+            vector<string> campos = split(linha, ',');
+
+            // Criação de um novo bem com os dados da linha
+            Bem novoBem;
+            novoBem.nome = campos[0];
+            novoBem.categoria = campos[1];
+            novoBem.dataAquisicao = campos[2];
+            novoBem.peso = stof(campos[3]);
+
+            // Verificação da categoria e leitura do endereço (se necessário)
+            if (novoBem.categoria == "imovel")
+            {
+                novoBem.endereco = campos[4];
+            }
+
+            // Adição do novo bem ao vetor
+            bens.push_back(novoBem);
+        }
+
+        arquivo.close();
+    }
+    else
+    {
+        cout << "Erro ao abrir o arquivo!" << endl;
+    }
+}
+
+// Função para gravar os dados dos bens em um arquivo
+void gravarDadosNoArquivo(const VetorBens &bens)
+{
+    ofstream arquivo("bens.txt");
+
+    if (arquivo.is_open())
+    {
+        for (const Bem &bem : bens)
+        {
+            // Gravação dos dados do bem no arquivo
+            arquivo << bem.nome << ","
+                    << bem.categoria << ","
+                    << bem.dataAquisicao << ","
+                    << bem.peso << ",";
+
+            if (bem.categoria == "imovel")
+            {
+                arquivo << bem.endereco;
+            }
+
+            arquivo << endl;
+        }
+
+        arquivo.close();
+    }
+    else
+    {
+        cout << "Erro ao abrir o arquivo!" << endl;
+    }
 }
 
 int main()
 {
-    const char *nomeArquivo = "bens.txt"; // Nome do arquivo de armazenamento
+    VetorBens bens; // Vetor para armazenar os bens
+
+    // Leitura inicial dos dados do arquivo
+    lerDadosDoArquivo(bens);
 
     int opcao;
 
     do
     {
-        cout << "\nMenu de Gestão de Bens da Universidade Zambeze" << endl;
-        cout << "1. Exibir todos os bens" << endl;
-        cout << "2. Buscar bem por nome" << endl;
-        cout << "3. Adicionar novo bem" << endl;
-        cout << "0. Sair" << endl;
+        // Exibição do menu
+        cout << endl;
+        cout << "Menu de Gerenciamento de Bens da UniZambeze" << endl;
+        cout << "1. Adicionar Bem" << endl;
+        cout << "2. Listar Bens" << endl;
+        cout << "3. Buscar Bem por Nome" << endl;
+        cout << "4. Remover Bem por Nome" << endl;
+        cout << "5. Sair" << endl;
         cout << "Digite a opção desejada: ";
         cin >> opcao;
 
         switch (opcao)
         {
         case 1:
-            exibirTodosBens(nomeArquivo);
+            adicionarBem(bens);
             break;
         case 2:
-            buscarBemPorNome(nomeArquivo);
+            listarBens(bens);
             break;
         case 3:
-            adicionarBem(nomeArquivo);
+        {
+            string nomeBusca;
+            cout << "Digite o nome do bem a ser buscado: ";
+            cin >> nomeBusca;
+
+            Bem *bemEncontrado = buscarBemPorNome(bens, nomeBusca);
+
+            if (bemEncontrado != nullptr)
+            {
+                cout << endl;
+                cout << "Bem encontrado:" << endl;
+                cout << "Nome: " << bemEncontrado->nome << endl;
+                cout << "Categoria: " << bemEncontrado->categoria << endl;
+                cout << "Data de aquisição: " << bemEncontrado->dataAquisicao << endl;
+                cout << "Peso: " << bemEncontrado->peso << " kg" << endl;
+
+                if (bemEncontrado->categoria == "imovel")
+                {
+                    cout << "Endereço: " << bemEncontrado->endereco << endl;
+                }
+            }
+            else
+            {
+                cout << "Bem não encontrado!" << endl;
+            }
             break;
-        case 0:
+        }
+        case 4:
+        {
+            string nomeRemocao;
+            cout << "Digite o nome do bem a ser removido: ";
+            cin >> nomeRemocao;
+
+            removerBemPorNome(bens, nomeRemocao);
+            break;
+        }
+        case 5:
             cout << "Saindo do programa..." << endl;
             break;
         default:
             cout << "Opção inválida!" << endl;
         }
-    } while (opcao != 0);
+    } while (opcao != 5);
+
+    // Gravação dos dados finais no arquivo
+    gravarDadosNoArquivo(bens);
 
     return 0;
 }
